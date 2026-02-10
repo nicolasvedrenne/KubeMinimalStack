@@ -10,7 +10,7 @@ spec:
     targetRevision: v0.10.3
     path: deploy
     directory:
-      include: "ha-install.yaml"
+      include: "standalone-install.yaml"
   destination:
     server: https://kubernetes.default.svc
     namespace: kubelet-serving-cert-approver
