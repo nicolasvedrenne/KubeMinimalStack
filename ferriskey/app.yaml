@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: ghcr.io/ferriskey/charts
     chart: ferriskey
-    targetRevision: v0.3.0
+    targetRevision: 0.3.0
     helm:
       releaseName: ferriskey
       valuesObject:
