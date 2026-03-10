@@ -21,6 +21,10 @@ spec:
           annotations:
             argocd.argoproj.io/hook: PreSync
             argocd.argoproj.io/sync-wave: "1"
+          serviceAccount:
+            annotations:
+              argocd.argoproj.io/hook: PreSync
+              argocd.argoproj.io/sync-wave: "0"
         postgresql:
           annotations:
             argocd.argoproj.io/hook: PreSync
