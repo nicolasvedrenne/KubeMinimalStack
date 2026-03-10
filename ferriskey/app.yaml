@@ -29,6 +29,10 @@ spec:
           annotations:
             argocd.argoproj.io/hook: PreSync
             argocd.argoproj.io/sync-wave: "0"
+          service:
+            annotations:
+              argocd.argoproj.io/hook: PreSync
+              argocd.argoproj.io/sync-wave: "0"
           serviceAccount:
             annotations:
               argocd.argoproj.io/hook: PreSync
