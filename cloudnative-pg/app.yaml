@@ -21,4 +21,5 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - PruneLast=true
+      - ServerSideApply=true
   revisionHistoryLimit: 10
