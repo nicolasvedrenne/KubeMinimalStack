@@ -20,20 +20,59 @@ jobs:
           cluster_name: flux
           version: v0.30.0
           node_image: kindest/node:v1.33.4
-      - name: Install Flux in Kubernetes Kind
-        run: flux install --components-extra source-watcher
+      - name: Install Flux Operator
+        run: |
+          helm install flux-operator oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator \
+          --namespace flux-system \
+          --create-namespace \
+          --version 0.45.1 \
+          --wait
+          kubectl wait --for=condition=Established crd/fluxinstances.fluxcd.controlplane.io --timeout=2m
       - name: Setup cluster reconciliation
         run: |
-          flux create source git flux-system \
+          flux create secret git flux-system-git-auth \
+          --namespace=flux-system \
           --url=${{ github.event.repository.html_url }} \
-          --branch=${GITHUB_REF#refs/heads/} \
-          --username=${GITHUB_ACTOR} \
+          --username=git \
           --password=${{ secrets.GITHUB_TOKEN }}
-          flux create kustomization flux-system \
-          --source=flux-system \
-          --path=./clusters/production
+
+          cat <<EOF | kubectl apply -f -
+          apiVersion: fluxcd.controlplane.io/v1
+          kind: FluxInstance
+          metadata:
+            name: flux
+            namespace: flux-system
+          spec:
+            distribution:
+              version: "2.x"
+              registry: ghcr.io/fluxcd
+              artifact: oci://ghcr.io/controlplaneio-fluxcd/flux-operator-manifests
+            components:
+              - source-controller
+              - kustomize-controller
+              - helm-controller
+              - notification-controller
+              - image-reflector-controller
+              - image-automation-controller
+              - source-watcher
+            cluster:
+              type: kubernetes
+              size: small
+              multitenant: false
+              networkPolicy: true
+              domain: cluster.local
+            sync:
+              kind: GitRepository
+              url: ${{ github.event.repository.html_url }}
+              ref: refs/heads/${GITHUB_REF#refs/heads/}
+              path: ./clusters/production
+              pullSecret: flux-system-git-auth
+            wait: true
+          EOF
       - name: Verify cluster reconciliation
         run: |
+          kubectl -n flux-system wait fluxinstance/flux --for=condition=ready --timeout=10m
+          kubectl -n flux-system wait kustomization/flux-system --for=condition=ready --timeout=10m
           kubectl -n flux-system wait kustomization/infra-controllers --for=condition=ready --timeout=5m
           kubectl -n flux-system wait kustomization/apps --for=condition=ready --timeout=5m
       - name: List deployed resources
@@ -42,6 +81,9 @@ jobs:
         if: failure()
         run: |
           kubectl -n flux-system get all
+          kubectl -n flux-system get fluxinstance,fluxreport
+          kubectl -n flux-system get gitrepository,kustomization,artifactgenerator,imageupdateautomation
+          kubectl -n flux-system logs deploy/flux-operator
           kubectl -n flux-system logs deploy/source-controller
           kubectl -n flux-system logs deploy/kustomize-controller
           kubectl -n flux-system logs deploy/helm-controller
