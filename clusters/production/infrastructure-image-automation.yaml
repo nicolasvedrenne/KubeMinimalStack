@@ -10,12 +10,17 @@ spec:
     kind: GitRepository
     name: flux-system
   git:
+    checkout:
+      ref:
+        branch: fluxcd-migration
     commit:
       author:
         name: fluxcdbot
         email: 47521326+nicolasvedrenne@users.noreply.github.com
       messageTemplate: |
         chore(images): update infrastructure images
+    push:
+      branch: fluxcd-migration
   update:
     path: ./infrastructure
     strategy: Setters
