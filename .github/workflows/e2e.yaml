@@ -69,12 +69,37 @@ jobs:
               pullSecret: flux-system-git-auth
             wait: true
           EOF
+      - name: Patch metrics-server for kind
+        run: |
+          kubectl -n flux-system wait kustomization/flux-system --for=condition=ready --timeout=10m
+
+          for i in $(seq 1 60); do
+            if kubectl -n metrics-server get helmrelease metrics-server >/dev/null 2>&1; then
+              break
+            fi
+            sleep 5
+          done
+
+          kubectl -n metrics-server patch helmrelease metrics-server --type=merge -p '{
+            "spec": {
+              "values": {
+                "defaultArgs": [
+                  "--cert-dir=/tmp",
+                  "--kubelet-preferred-address-types=InternalIP,Hostname",
+                  "--kubelet-use-node-status-port",
+                  "--metric-resolution=15s",
+                  "--kubelet-insecure-tls"
+                ]
+              }
+            }
+          }'
+
+          kubectl -n metrics-server annotate helmrelease metrics-server reconcile.fluxcd.io/requestedAt="$(date -Iseconds)" --overwrite
       - name: Verify cluster reconciliation
         run: |
-          kubectl -n flux-system wait fluxinstance/flux --for=condition=ready --timeout=10m
-          kubectl -n flux-system wait kustomization/flux-system --for=condition=ready --timeout=10m
-          kubectl -n flux-system wait kustomization/infra-controllers --for=condition=ready --timeout=5m
+          kubectl -n flux-system wait kustomization/infra-controllers --for=condition=ready --timeout=10m
           kubectl -n flux-system wait kustomization/apps --for=condition=ready --timeout=5m
+          kubectl -n flux-system wait fluxinstance/flux --for=condition=ready --timeout=10m
       - name: List deployed resources
         run: flux tree ks flux-system
       - name: Debug failure
@@ -83,6 +108,8 @@ jobs:
           kubectl -n flux-system get all
           kubectl -n flux-system get fluxinstance,fluxreport
           kubectl -n flux-system get gitrepository,kustomization,artifactgenerator,imageupdateautomation
+          kubectl -n metrics-server get helmrelease,pods,deploy,apiservice --ignore-not-found
+          kubectl -n metrics-server logs deploy/metrics-server --all-containers=true --tail=200 || true
           kubectl -n flux-system logs deploy/flux-operator
           kubectl -n flux-system logs deploy/source-controller
           kubectl -n flux-system logs deploy/kustomize-controller
