@@ -1,0 +1,24 @@
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageUpdateAutomation
+metadata:
+  name: apps-production
+  namespace: flux-system
+spec:
+  interval: 15m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  git:
+    commit:
+      author:
+        name: fluxcdbot
+        email: 47521326+nicolasvedrenne@users.noreply.github.com
+      messageTemplate: |
+        chore(images): update production images
+  update:
+    path: ./apps/production
+    strategy: Setters
+  policySelector:
+    matchLabels:
+      kube-minimal-stack.dev/automation: production

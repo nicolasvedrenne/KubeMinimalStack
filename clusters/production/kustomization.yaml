@@ -5,3 +5,5 @@ resources:
   - artifacts.yaml
   - infrastructure.yaml
   - apps.yaml
+  - image-automation.yaml
+  - infrastructure-image-automation.yaml
