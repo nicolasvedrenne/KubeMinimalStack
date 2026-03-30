@@ -69,32 +69,16 @@ jobs:
               pullSecret: flux-system-git-auth
             wait: true
           EOF
-      - name: Patch metrics-server for kind
+      - name: Relax infra-controllers wait for e2e
         run: |
-          for i in $(seq 1 120); do
-            if kubectl -n metrics-server get helmreleases.helm.toolkit.fluxcd.io metrics-server >/dev/null 2>&1; then
-              break
-            fi
-            sleep 5
-          done
-
-          kubectl -n metrics-server get helmreleases.helm.toolkit.fluxcd.io metrics-server
-
-          kubectl -n metrics-server patch helmreleases.helm.toolkit.fluxcd.io metrics-server --type=merge -p '{
+          kubectl -n flux-system wait kustomizations.kustomize.toolkit.fluxcd.io/flux-system --for=condition=ready --timeout=10m
+          kubectl -n flux-system patch kustomizations.kustomize.toolkit.fluxcd.io infra-controllers --type=merge -p '{
             "spec": {
-              "values": {
-                "defaultArgs": [
-                  "--cert-dir=/tmp",
-                  "--kubelet-preferred-address-types=InternalIP,Hostname",
-                  "--kubelet-use-node-status-port",
-                  "--metric-resolution=15s",
-                  "--kubelet-insecure-tls"
-                ]
-              }
+              "wait": false,
+              "timeout": "1m"
             }
           }'
-
-          kubectl -n metrics-server annotate helmreleases.helm.toolkit.fluxcd.io metrics-server reconcile.fluxcd.io/requestedAt="$(date -Iseconds)" --overwrite
+          kubectl -n flux-system annotate kustomizations.kustomize.toolkit.fluxcd.io infra-controllers reconcile.fluxcd.io/requestedAt="$(date -Iseconds)" --overwrite
       - name: Verify cluster reconciliation
         run: |
           kubectl -n flux-system wait kustomizations.kustomize.toolkit.fluxcd.io/infra-controllers --for=condition=ready --timeout=10m
@@ -108,8 +92,9 @@ jobs:
           kubectl -n flux-system get all || true
           kubectl -n flux-system get fluxinstances,fluxreports || true
           kubectl -n flux-system get gitrepositories,kustomizations,artifactgenerators,imageupdateautomations || true
-          kubectl -n metrics-server get helmreleases,pods,deployments,apiservices --ignore-not-found || true
-          kubectl -n metrics-server logs deploy/metrics-server --all-containers=true --tail=200 || true
+          kubectl -n metrics-server get helmreleases --ignore-not-found || true
+          kubectl -n kube-system get deployments,pods,apiservices | grep metrics-server || true
+          kubectl -n kube-system logs deploy/metrics-server --all-containers=true --tail=200 || true
           kubectl -n flux-system logs deploy/flux-operator || true
           kubectl -n flux-system logs deploy/source-controller || true
           kubectl -n flux-system logs deploy/kustomize-controller || true
