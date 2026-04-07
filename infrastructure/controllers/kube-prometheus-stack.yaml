@@ -34,6 +34,7 @@ spec:
         namespace: monitoring
       interval: 1h
   install:
+    serverSideApply: true
     crds: CreateReplace
     strategy:
       name: RetryOnFailure
