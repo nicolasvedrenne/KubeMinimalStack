@@ -4,3 +4,4 @@ resources:
   - cloudnative-pg.yaml
   - kube-prometheus-stack.yaml
   - metrics-server.yaml
+  - sealed-secrets.yaml
