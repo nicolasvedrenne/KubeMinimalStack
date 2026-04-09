@@ -50,6 +50,15 @@ spec:
   values:
     crds:
       enabled: true
+
+    defaultRules:
+      rules:
+        # Cilium replaces kube-proxy on this cluster.
+        kubeControllerManager: false
+        kubeProxy: false
+        kubeSchedulerAlerting: false
+        kubeSchedulerRecording: false
+
     alertmanager:
       alertmanagerSpec:
         replicas: 1
@@ -61,15 +70,30 @@ spec:
               resources:
                 requests:
                   storage: 2Gi
+
     grafana:
-      ingress:
-        enabled: false
-      persistence:
-        enabled: true
-        type: sts
-        accessModes:
-          - ReadWriteOnce
-        size: 5Gi
+      enabled: false
+
+      # Keep publishing the upstream dashboards as ConfigMaps for the external Grafana sidecar.
+      forceDeployDashboards: true
+      defaultDashboardsEnabled: true
+
+      sidecar:
+        dashboards:
+          # Match the external Grafana sidecar selector exactly.
+          enabled: true
+          label: grafana_dashboard
+          labelValue: "1"
+
+    kubeProxy:
+      enabled: false
+
+    kubeControllerManager:
+      enabled: false
+
+    kubeScheduler:
+      enabled: false
+
     prometheus:
       ingress:
         enabled: false
