@@ -1,0 +1,19 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: ferriskey
+  namespace: ferriskey
+spec:
+  instances: 3
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.9
+  bootstrap:
+    initdb:
+      database: ferriskey
+      owner: ferriskey
+  resources:
+    requests:
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+  storage:
+    size: 5Gi

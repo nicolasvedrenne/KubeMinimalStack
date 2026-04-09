@@ -1,0 +1,54 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: ferriskey
+  namespace: ferriskey
+spec:
+  interval: 1h
+  url: https://github.com/ferriskey/ferriskey.git
+  ref:
+    branch: main
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: ferriskey
+  namespace: ferriskey
+spec:
+  interval: 10m
+  releaseName: ferriskey
+  targetNamespace: ferriskey
+  chart:
+    spec:
+      chart: ./charts/ferriskey
+      reconcileStrategy: Revision
+      sourceRef:
+        kind: GitRepository
+        name: ferriskey
+        namespace: ferriskey
+      interval: 1h
+  install:
+    createNamespace: true
+    strategy:
+      name: RetryOnFailure
+      retryInterval: 30s
+  upgrade:
+    strategy:
+      name: RetryOnFailure
+      retryInterval: 30s
+  driftDetection:
+    mode: enabled
+  maxHistory: 10
+  values:
+    database:
+      host: ferriskey-rw
+      name: ferriskey
+      port: 5432
+      user: ferriskey
+      passwordSecret:
+        create: false
+        name: ferriskey-app
+    postgresql:
+      enabled: false
+    ingress:
+      enabled: false

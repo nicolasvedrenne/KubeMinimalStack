@@ -71,19 +71,6 @@ spec:
                 requests:
                   storage: 2Gi
 
-    grafana:
-      enabled: false
-
-      # Keep publishing the upstream dashboards as ConfigMaps for the external Grafana sidecar.
-      forceDeployDashboards: true
-      defaultDashboardsEnabled: true
-
-      sidecar:
-        dashboards:
-          # Match the external Grafana sidecar selector exactly.
-          enabled: true
-          label: grafana_dashboard
-          labelValue: "1"
 
     kubeProxy:
       enabled: false
